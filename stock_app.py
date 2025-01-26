@@ -42,17 +42,42 @@ def company_to_ticker(company_name):
         return None
 
 def dcf_model(fcf, growth, terminal_growth, discount_rate, years):
-    """Discounted Cash Flow valuation model"""
+    """Discounted Cash Flow valuation model with negative FCF handling"""
+    if terminal_growth >= discount_rate:
+        raise ValueError("Terminal growth must be less than discount rate")
+    
     cash_flows = []
+    current_fcf = fcf
+    
+    # Explicit forecast period
     for year in range(1, years + 1):
-        fcf *= (1 + growth/100)
-        cash_flows.append(fcf / ((1 + discount_rate/100) ** year))
+        current_fcf *= (1 + growth/100)
+        discounted_cf = current_fcf / ((1 + discount_rate/100) ** year)
+        cash_flows.append(discounted_cf)
 
-    terminal_value = (fcf * (1 + terminal_growth/100)) / (
+    # Terminal value handling
+    final_year_fcf = current_fcf
+    if final_year_fcf < 0:
+        # Scenario 1: If company dies after forecast period
+        # terminal_value = 0
+        
+        # Scenario 2: If turnaround expected - use industry average margins
+        # revenue = ...  # You would need revenue data here
+        # industry_fcf_margin = 0.10  # Example: 10% margin
+        # terminal_fcf = revenue * industry_fcf_margin
+        # terminal_value = (terminal_fcf * (1 + terminal_growth/100)) / 
+        #                 (discount_rate/100 - terminal_growth/100)
+        
+        raise ValueError("Negative final FCF - terminal value calculation invalid")
+
+    terminal_value = (final_year_fcf * (1 + terminal_growth/100)) / (
         (discount_rate/100 - terminal_growth/100))
+    
     terminal_value_discounted = terminal_value / ((1 + discount_rate/100) ** years)
-
-    return sum(cash_flows) + terminal_value_discounted
+    
+    total_value = sum(cash_flows) + terminal_value_discounted
+    
+    return total_value
 
 def validate_weights(weights):
     """Ensure weights sum to 100%"""
